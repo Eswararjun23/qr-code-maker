@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Generator - Create QR Codes Instantly</title>
+  <meta name="description" content="Simple, modern, and private QR Code Generator. Convert text, URLs, or images into scannable QR codes directly in your browser.">
+  <link rel="stylesheet" href="style.css">
+  <!-- QRCode.js Library for browser-based QR Code generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Section -->
+    <header class="header">
+      <h1 class="title">QR Generator</h1>
+      <p class="subtitle">Create QR codes instantly</p>
+    </header>
+
+    <!-- Main Card Container -->
+    <main class="card">
+
+      <!-- QR Type Selector Tabs -->
+      <div class="type-selector" role="tablist">
+        <button 
+          id="textModeBtn" 
+          class="tab-btn active" 
+          role="tab" 
+          aria-selected="true"
+          onclick="switchMode('text')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          Text / URL
+        </button>
+        <button 
+          id="imageModeBtn" 
+          class="tab-btn" 
+          role="tab" 
+          aria-selected="false"
+          onclick="switchMode('image')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          Image
+        </button>
+      </div>
+
+      <!-- Error / Alert Message Banner -->
+      <div id="errorBanner" class="error-banner hidden" role="alert">
+        <span id="errorMessage"></span>
+      </div>
+
+      <!-- Text / URL Input Mode -->
+      <div id="textModeSection" class="input-section">
+        <label for="textInput" class="input-label">Enter text or URL</label>
+        <input 
+          type="text" 
+          id="textInput" 
+          class="text-input" 
+          placeholder="e.g. Hello World or https://github.com"
+          autocomplete="off">
+      </div>
+
+      <!-- Image Input Mode -->
+      <div id="imageModeSection" class="input-section hidden">
+        <div class="upload-area" id="uploadArea" onclick="triggerFileInput()">
+          <div class="upload-icon">🖼️</div>
+          <p class="upload-title">Upload Image</p>
+          <p class="upload-subtitle">JPG, PNG, WEBP (Max ~2 KB)</p>
+          <button type="button" class="btn btn-secondary select-img-btn">Choose Image</button>
+          <input 
+            type="file" 
+            id="imageInput" 
+            class="hidden-file-input" 
+            accept="image/jpeg, image/png, image/webp, image/jpg"
+            onchange="handleImageSelect(event)">
+        </div>
+
+        <!-- Selected Image Info & Preview -->
+        <div id="imagePreviewContainer" class="image-preview-container hidden">
+          <img id="imagePreview" src="" alt="Selected preview" class="preview-img">
+          <div class="file-details">
+            <span id="fileNameDisplay" class="file-name">Selected image: none</span>
+            <button type="button" class="remove-file-btn" onclick="clearSelectedImage()" title="Remove image">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <button id="generateBtn" class="btn btn-primary generate-btn" onclick="generateQRCode()">
+        Generate QR
+      </button>
+
+      <!-- QR Code Result Section -->
+      <div id="qrResultSection" class="qr-result-section hidden">
+        <h2 class="qr-heading">QR CODE</h2>
+        
+        <!-- QR Code Render Box -->
+        <div class="qr-card">
+          <div id="qrContainer" class="qr-container"></div>
+        </div>
+
+        <!-- Download Button -->
+        <button id="downloadBtn" class="btn btn-success download-btn" onclick="downloadQRCode()">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download QR
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="footer">
+      <p class="privacy-note">Simple • Fast • Private</p>
+      <p class="privacy-sub">Processed 100% locally in your browser. No data is sent to any server.</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
