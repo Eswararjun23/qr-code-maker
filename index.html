@@ -6,7 +6,9 @@
   <title>QR Generator - Create QR Codes Instantly</title>
   <meta name="description" content="Simple, modern, and private QR Code Generator. Convert text, URLs, or images into scannable QR codes directly in your browser.">
   <link rel="stylesheet" href="style.css">
-  <!-- QRCode.js Library for browser-based QR Code generation -->
+  <!-- Offline-first libraries with CDN fallbacks -->
+  <script src="lib/qrcode.min.js"></script>
+  <script src="lib/jsqr.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -67,16 +69,22 @@
 
       <!-- Image Input Mode -->
       <div id="imageModeSection" class="input-section hidden">
-        <div class="upload-area" id="uploadArea" onclick="triggerFileInput()">
+        <div 
+          class="upload-area" 
+          id="uploadArea" 
+          onclick="triggerFileInput()"
+          ondragover="handleDragOver(event)"
+          ondragleave="handleDragLeave(event)"
+          ondrop="handleDrop(event)">
           <div class="upload-icon">🖼️</div>
           <p class="upload-title">Upload Image</p>
-          <p class="upload-subtitle">JPG, PNG, WEBP (Max ~2 KB)</p>
+          <p class="upload-subtitle">JPG, PNG, WEBP, SVG (Any file size • Auto-optimized)</p>
           <button type="button" class="btn btn-secondary select-img-btn">Choose Image</button>
           <input 
             type="file" 
             id="imageInput" 
             class="hidden-file-input" 
-            accept="image/jpeg, image/png, image/webp, image/jpg"
+            accept="image/jpeg, image/png, image/webp, image/jpg, image/svg+xml, image/gif"
             onchange="handleImageSelect(event)">
         </div>
 
@@ -85,7 +93,268 @@
           <img id="imagePreview" src="" alt="Selected preview" class="preview-img">
           <div class="file-details">
             <span id="fileNameDisplay" class="file-name">Selected image: none</span>
-            <button type="button" class="remove-file-btn" onclick="clearSelectedImage()" title="Remove image">✕</button>
+            <div id="compressionBadge" class="compression-badge hidden">
+              <span class="badge-icon">⚡</span>
+              <span id="compressionText">Auto-optimized</span>
+            </div>
+          </div>
+          <button type="button" class="remove-file-btn" onclick="clearSelectedImage()" title="Remove image">✕</button>
+        </div>
+      </div>
+
+      <!-- Style & Creative Shapes Customizer (Accordion) -->
+      <div class="customizer-wrapper">
+        <button 
+          type="button" 
+          id="toggleCustomizerBtn" 
+          class="customizer-toggle-btn" 
+          onclick="toggleCustomizer()"
+          aria-expanded="false">
+          <div class="toggle-left">
+            <span class="toggle-icon">✨</span>
+            <span class="toggle-title">Style & Creative Shapes</span>
+          </div>
+          <div class="toggle-right">
+            <span class="toggle-badge" id="styleSummaryBadge">Classic</span>
+            <svg class="chevron-icon" id="customizerChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </button>
+
+        <div id="customizerPanel" class="customizer-panel hidden">
+          <!-- Customizer Navigation Tabs -->
+          <div class="customizer-nav" role="tablist">
+            <button type="button" class="cust-tab-btn active" onclick="switchCustTab('shapes')">📐 Shapes</button>
+            <button type="button" class="cust-tab-btn" onclick="switchCustTab('patterns')">🔘 Patterns</button>
+            <button type="button" class="cust-tab-btn" onclick="switchCustTab('colors')">🎨 Colors</button>
+            <button type="button" class="cust-tab-btn" onclick="switchCustTab('logo')">🖼️ Logo</button>
+          </div>
+
+          <!-- Tab 1: Shapes & Frames -->
+          <div id="custTabShapes" class="cust-tab-content">
+            <label class="cust-label">QR Silhouette & Frame</label>
+            <div class="shape-grid">
+              <button type="button" class="shape-btn active" data-shape="classic" onclick="setQRShape('classic')">
+                <span class="shape-emoji">⬛</span>
+                <span class="shape-name">Classic</span>
+              </button>
+              <button type="button" class="shape-btn" data-shape="heart" onclick="setQRShape('heart')">
+                <span class="shape-emoji">❤️</span>
+                <span class="shape-name">Heart</span>
+              </button>
+              <button type="button" class="shape-btn" data-shape="circle" onclick="setQRShape('circle')">
+                <span class="shape-emoji">⚪</span>
+                <span class="shape-name">Circle</span>
+              </button>
+              <button type="button" class="shape-btn" data-shape="star" onclick="setQRShape('star')">
+                <span class="shape-emoji">⭐</span>
+                <span class="shape-name">Star</span>
+              </button>
+              <button type="button" class="shape-btn" data-shape="cat" onclick="setQRShape('cat')">
+                <span class="shape-emoji">🐱</span>
+                <span class="shape-name">Cat</span>
+              </button>
+              <button type="button" class="shape-btn" data-shape="tree" onclick="setQRShape('tree')">
+                <span class="shape-emoji">🌳</span>
+                <span class="shape-name">Tree</span>
+              </button>
+              <button type="button" class="shape-btn" data-shape="flower" onclick="setQRShape('flower')">
+                <span class="shape-emoji">🌸</span>
+                <span class="shape-name">Flower</span>
+              </button>
+              <button type="button" class="shape-btn" data-shape="custom" onclick="setQRShape('custom')">
+                <span class="shape-emoji">🎨</span>
+                <span class="shape-name">Custom</span>
+              </button>
+            </div>
+
+            <!-- Custom Shape Sub-options -->
+            <div id="customShapeOptions" class="custom-subpanel hidden">
+              <label class="cust-label-sm">Extra Preset Shape</label>
+              <div class="mini-chips">
+                <button type="button" class="chip-btn active" onclick="setCustomShapePreset('diamond')">Diamond 💎</button>
+                <button type="button" class="chip-btn" onclick="setCustomShapePreset('shield')">Shield 🛡️</button>
+                <button type="button" class="chip-btn" onclick="setCustomShapePreset('hexagon')">Hexagon ⬡</button>
+                <button type="button" class="chip-btn" onclick="setCustomShapePreset('cloud')">Cloud ☁️</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Patterns & Corners -->
+          <div id="custTabPatterns" class="cust-tab-content hidden">
+            <!-- Module Dot Pattern -->
+            <label class="cust-label">Module Pattern</label>
+            <div class="pill-grid">
+              <button type="button" class="pill-btn active" data-dot="square" onclick="setDotStyle('square')">Square</button>
+              <button type="button" class="pill-btn" data-dot="dots" onclick="setDotStyle('dots')">Dots</button>
+              <button type="button" class="pill-btn" data-dot="rounded" onclick="setDotStyle('rounded')">Rounded</button>
+              <button type="button" class="pill-btn" data-dot="extra-rounded" onclick="setDotStyle('extra-rounded')">Extra Round</button>
+              <button type="button" class="pill-btn" data-dot="hearts" onclick="setDotStyle('hearts')">Mini Hearts</button>
+              <button type="button" class="pill-btn" data-dot="stars" onclick="setDotStyle('stars')">Stars</button>
+              <button type="button" class="pill-btn" data-dot="classy" onclick="setDotStyle('classy')">Classy</button>
+            </div>
+
+            <!-- Corner Outer Eye Style -->
+            <label class="cust-label mt-12">Corner Outer Eyes</label>
+            <div class="pill-grid">
+              <button type="button" class="pill-btn active" data-ceye="square" onclick="setCornerEyeStyle('square')">Square</button>
+              <button type="button" class="pill-btn" data-ceye="rounded" onclick="setCornerEyeStyle('rounded')">Rounded</button>
+              <button type="button" class="pill-btn" data-ceye="extra-rounded" onclick="setCornerEyeStyle('extra-rounded')">Extra Round</button>
+              <button type="button" class="pill-btn" data-ceye="circle" onclick="setCornerEyeStyle('circle')">Circle Ring</button>
+            </div>
+
+            <!-- Corner Inner Dot Style -->
+            <label class="cust-label mt-12">Corner Inner Dots</label>
+            <div class="pill-grid">
+              <button type="button" class="pill-btn active" data-cdot="square" onclick="setCornerDotStyle('square')">Square</button>
+              <button type="button" class="pill-btn" data-cdot="dot" onclick="setCornerDotStyle('dot')">Round Dot</button>
+              <button type="button" class="pill-btn" data-cdot="heart" onclick="setCornerDotStyle('heart')">Heart ❤️</button>
+              <button type="button" class="pill-btn" data-cdot="star" onclick="setCornerDotStyle('star')">Star ⭐</button>
+            </div>
+          </div>
+
+          <!-- Tab 3: Colors & Background -->
+          <div id="custTabColors" class="cust-tab-content hidden">
+            <!-- Color Mode -->
+            <div class="color-mode-row">
+              <label class="cust-label">QR Color Mode</label>
+              <div class="segmented-control">
+                <button type="button" class="segment-btn active" data-cmode="solid" onclick="setColorMode('solid')">Solid</button>
+                <button type="button" class="segment-btn" data-cmode="linear" onclick="setColorMode('linear')">Gradient</button>
+                <button type="button" class="segment-btn" data-cmode="radial" onclick="setColorMode('radial')">Radial</button>
+              </div>
+            </div>
+
+            <!-- Color Pickers -->
+            <div class="color-picker-row">
+              <div class="color-picker-box">
+                <span class="color-picker-label">Color 1</span>
+                <div class="color-input-wrap">
+                  <input type="color" id="qrColor1" value="#0f172a" onchange="handleColor1Change(event)">
+                  <span id="qrColor1Hex" class="color-hex">#0F172A</span>
+                </div>
+              </div>
+
+              <div class="color-picker-box" id="color2Container" style="opacity: 0.5; pointer-events: none;">
+                <span class="color-picker-label">Color 2 (Gradient)</span>
+                <div class="color-input-wrap">
+                  <input type="color" id="qrColor2" value="#4f46e5" onchange="handleColor2Change(event)">
+                  <span id="qrColor2Hex" class="color-hex">#4F46E5</span>
+                </div>
+              </div>
+
+              <div class="color-picker-box">
+                <span class="color-picker-label">Background</span>
+                <div class="color-input-wrap">
+                  <input type="color" id="qrBgColor" value="#ffffff" onchange="handleBgColorChange(event)">
+                  <span id="qrBgColorHex" class="color-hex">#FFFFFF</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <label class="cust-label-sm mt-8">Quick Color Themes</label>
+            <div class="color-swatches">
+              <button type="button" class="swatch-btn" style="background:#0f172a;" title="Slate Black" onclick="applyPresetColors('#0f172a','#0f172a','#ffffff','solid')"></button>
+              <button type="button" class="swatch-btn" style="background:#4f46e5;" title="Indigo SaaS" onclick="applyPresetColors('#4f46e5','#4f46e5','#ffffff','solid')"></button>
+              <button type="button" class="swatch-btn" style="background:#059669;" title="Emerald Green" onclick="applyPresetColors('#059669','#059669','#ffffff','solid')"></button>
+              <button type="button" class="swatch-btn" style="background:#ea580c;" title="Sunset Orange" onclick="applyPresetColors('#ea580c','#ea580c','#ffffff','solid')"></button>
+              <button type="button" class="swatch-btn" style="background:#e11d48;" title="Rose Pink" onclick="applyPresetColors('#e11d48','#e11d48','#ffffff','solid')"></button>
+              <button type="button" class="swatch-btn" style="background:#7c3aed;" title="Royal Purple" onclick="applyPresetColors('#7c3aed','#7c3aed','#ffffff','solid')"></button>
+              <button type="button" class="swatch-btn" style="background:linear-gradient(135deg, #4f46e5, #06b6d4);" title="Ocean Breeze" onclick="applyPresetColors('#4f46e5','#06b6d4','#ffffff','linear')"></button>
+              <button type="button" class="swatch-btn" style="background:linear-gradient(135deg, #e11d48, #ea580c);" title="Sunset Fire" onclick="applyPresetColors('#e11d48','#ea580c','#ffffff','linear')"></button>
+              <button type="button" class="swatch-btn" style="background:linear-gradient(135deg, #8b5cf6, #ec4899);" title="Berry Glow" onclick="applyPresetColors('#8b5cf6','#ec4899','#ffffff','linear')"></button>
+            </div>
+
+            <!-- Transparent Background Toggle -->
+            <div class="checkbox-row mt-12">
+              <label class="checkbox-label">
+                <input type="checkbox" id="transparentBgCheckbox" onchange="handleTransparentBgChange(event)">
+                <span>Transparent Background (for PNG/SVG overlays)</span>
+              </label>
+            </div>
+
+            <!-- Background Image Upload Option -->
+            <div class="bg-image-option mt-12">
+              <div class="bg-image-header">
+                <label class="cust-label-sm">Background Image Overlay</label>
+                <button type="button" class="link-btn-sm" onclick="triggerBgImageInput()">+ Add Background Image</button>
+                <input type="file" id="bgImageInput" class="hidden-file-input" accept="image/*" onchange="handleBgImageSelect(event)">
+              </div>
+              <div id="bgImageStatus" class="bg-image-status hidden">
+                <span id="bgImageName">image.jpg</span>
+                <label class="opacity-label">
+                  Opacity: <span id="bgOpacityVal">20%</span>
+                  <input type="range" id="bgOpacitySlider" min="5" max="60" value="20" oninput="handleBgOpacityChange(event)">
+                </label>
+                <button type="button" class="remove-chip-btn" onclick="clearBgImage()">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 4: Center Logo & Error Correction -->
+          <div id="custTabLogo" class="cust-tab-content hidden">
+            <label class="cust-label">Center Logo / Icon</label>
+            <div class="shape-grid">
+              <button type="button" class="shape-btn active" data-logo="none" onclick="setLogoPreset('none')">
+                <span class="shape-emoji">🚫</span>
+                <span class="shape-name">None</span>
+              </button>
+              <button type="button" class="shape-btn" data-logo="heart" onclick="setLogoPreset('heart')">
+                <span class="shape-emoji">❤️</span>
+                <span class="shape-name">Heart</span>
+              </button>
+              <button type="button" class="shape-btn" data-logo="star" onclick="setLogoPreset('star')">
+                <span class="shape-emoji">⭐</span>
+                <span class="shape-name">Star</span>
+              </button>
+              <button type="button" class="shape-btn" data-logo="cat" onclick="setLogoPreset('cat')">
+                <span class="shape-emoji">🐱</span>
+                <span class="shape-name">Cat</span>
+              </button>
+              <button type="button" class="shape-btn" data-logo="tree" onclick="setLogoPreset('tree')">
+                <span class="shape-emoji">🌳</span>
+                <span class="shape-name">Tree</span>
+              </button>
+              <button type="button" class="shape-btn" data-logo="flower" onclick="setLogoPreset('flower')">
+                <span class="shape-emoji">🌸</span>
+                <span class="shape-name">Flower</span>
+              </button>
+              <button type="button" class="shape-btn" data-logo="link" onclick="setLogoPreset('link')">
+                <span class="shape-emoji">🔗</span>
+                <span class="shape-name">Link</span>
+              </button>
+              <button type="button" class="shape-btn" data-logo="camera" onclick="setLogoPreset('camera')">
+                <span class="shape-emoji">📷</span>
+                <span class="shape-name">Camera</span>
+              </button>
+            </div>
+
+            <!-- Custom Logo Upload -->
+            <div class="custom-logo-upload mt-12">
+              <button type="button" class="btn btn-secondary upload-logo-btn" onclick="triggerLogoInput()">
+                <span>🖼️ Upload Custom Logo</span>
+              </button>
+              <input type="file" id="logoFileInput" class="hidden-file-input" accept="image/*" onchange="handleCustomLogoSelect(event)">
+              <div id="customLogoPreviewWrap" class="custom-logo-preview-wrap hidden">
+                <img id="customLogoThumb" src="" alt="Custom logo thumb" class="logo-thumb">
+                <span id="customLogoName" class="file-name">logo.png</span>
+                <button type="button" class="remove-chip-btn" onclick="clearCustomLogo()">✕</button>
+              </div>
+            </div>
+
+            <!-- Scannability Reliability Level -->
+            <div class="ec-section mt-16">
+              <label class="cust-label">Error Correction (Redundancy)</label>
+              <div class="segmented-control">
+                <button type="button" class="segment-btn" data-ec="L" onclick="setErrorCorrection('L')">Low (7%)</button>
+                <button type="button" class="segment-btn" data-ec="M" onclick="setErrorCorrection('M')">Med (15%)</button>
+                <button type="button" class="segment-btn" data-ec="Q" onclick="setErrorCorrection('Q')">Quart (25%)</button>
+                <button type="button" class="segment-btn active" data-ec="H" onclick="setErrorCorrection('H')">High (30% ⭐)</button>
+              </div>
+              <p class="cust-hint">High (30%) preserves full scannability when shapes, logos, or decorations are active.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -99,20 +368,53 @@
       <div id="qrResultSection" class="qr-result-section hidden">
         <h2 class="qr-heading">QR CODE</h2>
         
+        <!-- Scannability Status Banner -->
+        <div id="scannabilityCard" class="scannability-card scannable">
+          <div class="scan-status-main">
+            <span id="scanStatusIcon" class="scan-status-icon">✅</span>
+            <div class="scan-status-text">
+              <div id="scanStatusTitle" class="scan-status-title">Scan Verified: 100% Scannable</div>
+              <div id="scanStatusDetails" class="scan-status-details">Tested live with built-in QR scanner</div>
+            </div>
+          </div>
+          <button type="button" id="testScanBtn" class="btn-test-scan" onclick="openScanModal()" title="Run interactive scan test">
+            <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+              <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+              <line x1="7" y1="12" x2="17" y2="12"/>
+            </svg>
+            Test Scan
+          </button>
+        </div>
+
         <!-- QR Code Render Box -->
         <div class="qr-card">
           <div id="qrContainer" class="qr-container"></div>
         </div>
 
-        <!-- Download Button -->
-        <button id="downloadBtn" class="btn btn-success download-btn" onclick="downloadQRCode()">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Download QR
-        </button>
+        <!-- Dual Download Buttons (PNG & SVG) -->
+        <div class="download-group">
+          <button id="downloadBtn" class="btn btn-success download-btn" onclick="downloadQRCode('png')">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download PNG
+          </button>
+          <button id="downloadSvgBtn" class="btn btn-secondary download-btn svg-btn" onclick="downloadQRCode('svg')">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Download SVG
+          </button>
+        </div>
       </div>
 
     </main>
@@ -122,6 +424,45 @@
       <p class="privacy-note">Simple • Fast • Private</p>
       <p class="privacy-sub">Processed 100% locally in your browser. No data is sent to any server.</p>
     </footer>
+  </div>
+
+  <!-- Interactive Phone Scanner Simulation Modal -->
+  <div id="scanModal" class="modal-backdrop hidden" onclick="closeScanModalOnBackdrop(event)">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">📱 Live QR Scan Test</h3>
+        <button type="button" class="modal-close" onclick="closeScanModal()" title="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="scanner-frame">
+          <div class="laser-line"></div>
+          <div id="modalQrPreview" class="modal-qr-preview"></div>
+          <div class="corner-reticle top-left"></div>
+          <div class="corner-reticle top-right"></div>
+          <div class="corner-reticle bottom-left"></div>
+          <div class="corner-reticle bottom-right"></div>
+        </div>
+
+        <div class="scan-verified-box">
+          <div class="scan-verified-header">
+            <span class="verified-dot"></span>
+            <strong>VERIFIED SCANNABLE</strong>
+          </div>
+          <div id="modalDecodedText" class="modal-decoded-text"></div>
+          <div id="modalMetaInfo" class="modal-meta-info"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary modal-btn" id="copyDecodedBtn" onclick="copyDecodedText()">
+          📋 Copy Text
+        </button>
+        <button type="button" class="btn btn-primary modal-btn" id="openDecodedBtn" onclick="openDecodedUrl()">
+          🔗 Open URL
+        </button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
